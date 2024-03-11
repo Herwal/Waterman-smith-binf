@@ -45,21 +45,32 @@ def read_fasta(file_name: str) -> str:
         return f.read().replace("\n", "")
 
 
-def print_alignment(a1: str, a2: str) -> None:
-    """ "Function to print the alignment of two sequences."""
+def print_alignment(a1: str, a2: str, start_positions) -> None:
+    """Function to print the alignment of two sequences."""
     max_width = 20
+    a, b = start_positions[0], start_positions[1]
+    print(a, b)
+
     for i in range(0, len(a1), max_width):
-        end_pos = i + max_width if len(a1) > i + max_width else len(a1)
-        print(f"Sequence1: {i + 1: >4} {a1[i:i+max_width]} {end_pos}")
+        num_gap_a = " " * (len(str(b)) - 3)
+        num_gap_b = " " * (len(str(a)) - 3)
+        white_space_gap = "             " + " " * (len(str(a)))
         print(
-            "                "
+            f"Sequence1: {a} {num_gap_a} {a1[i:i+max_width]} {a + len(a1[i:i+max_width])}"
+        )
+        print(
+            white_space_gap
             + "".join(
                 "|" if a1[i + k] == a2[i + k] else " "
                 for k in range(min(max_width, len(a1) - i))
             )
         )
-        print(f"Sequence2: {i + 1: >4} {a2[i:i+max_width]} {end_pos}")
+        print(
+            f"Sequence2: {b} {num_gap_b} {a2[i:i+max_width]} {b + len(a2[i:i+max_width])}"
+        )
         print()
+        a += max_width
+        b += max_width
 
 
 def create_alignment_matrix(seq1: str, seq2: str) -> np.ndarray:
@@ -93,17 +104,18 @@ def local_alignment(seq1: str, seq2: str) -> None:
     """Function to perform local alignment of two sequences."""
 
     # Create the alignment matrix and get the optimal alignment score
+    aligned_sequences = []
+    start_positions = []
     matrix = create_alignment_matrix(seq1, seq2)
     alignment_score = np.max(matrix)
     max_pos = np.where(matrix == alignment_score)
-    start_row, start_col = max_pos[0][0], max_pos[1][0]
 
-    # Start backtracking
-    aligned_sequences = []
-    back_track_params = BacktrackParams(
-        start_row, start_col, "", "", aligned_sequences, matrix, seq1, seq2
-    )
-    backtrack(back_track_params)
+    for start_row, start_col in zip(*max_pos):
+        back_track_params = BacktrackParams(
+            start_row, start_col, "", "", aligned_sequences, matrix, seq1, seq2
+        )
+        backtrack(back_track_params)
+        start_positions.append((start_row, start_col))
 
     print("Matrix: \n", matrix, "\n")
     print("Optimal alignment score:", alignment_score)
@@ -117,71 +129,72 @@ def local_alignment(seq1: str, seq2: str) -> None:
         stats_params = StatisticsParams(
             matches, mismatches, gaps, length, aligned_sequences[idx], idx
         )
-        print_statistics(stats_params)
+        print_statistics(stats_params, tuple(start_positions[idx]))
 
 
 def backtrack(params: BacktrackParams) -> None:
     """Function to backtrack and find the optimal alignment(s)."""
+    row = params.row
+    col = params.col
+    a1 = params.a1
+    a2 = params.a2
+    alignments = params.alignments
+    matrix = params.matrix
+    seq1 = params.seq1
+    seq2 = params.seq2
 
     # Base case
-    if params.matrix[params.row][params.col] == 0:
-        params.alignments.append((params.a1[::-1], params.a2[::-1]))
+    if matrix[row][col] == 0:
+        alignments.append((a1[::-1], a2[::-1]))
+        return alignments
 
     # Check if it's a horizontal move
-    if params.col > 0 and params.matrix[params.row][params.col] == (
-        params.matrix[params.row][params.col - 1] + GAP
-    ):
+    if col > 0 and matrix[row][col] == (matrix[row][col - 1] + GAP):
         new_params = BacktrackParams(
-            params.row,
-            params.col - 1,
-            params.a1 + params.seq1[params.col - 1],
-            params.a2 + "-",
-            params.alignments,
-            params.matrix,
-            params.seq1,
-            params.seq2,
+            row,
+            col - 1,
+            a1 + seq1[col - 1],
+            a2 + "-",
+            alignments,
+            matrix,
+            seq1,
+            seq2,
         )
-        backtrack(new_params)
+        return backtrack(new_params)
 
     # Check if it's a vertical move
-    if params.row > 0 and params.matrix[params.row][params.col] == (
-        params.matrix[params.row - 1][params.col] + GAP
-    ):
+    if row > 0 and matrix[row][col] == (matrix[row - 1][col] + GAP):
         new_params = BacktrackParams(
-            params.row - 1,
-            params.col,
-            params.a1 + "-",
-            params.a2 + params.seq2[params.row - 1],
-            params.alignments,
-            params.matrix,
-            params.seq1,
-            params.seq2,
+            row - 1,
+            col,
+            a1 + "-",
+            a2 + seq2[row - 1],
+            alignments,
+            matrix,
+            seq1,
+            seq2,
         )
-        backtrack(new_params)
+        return backtrack(new_params)
 
     # Check if it's a diagonal move (match/mismatch)
     if (
-        params.row > 0
-        and params.col > 0
-        and params.matrix[params.row][params.col]
-        == params.matrix[params.row - 1][params.col - 1]
-        + (
-            MATCH
-            if params.seq1[params.col - 1] == params.seq2[params.row - 1]
-            else MISMATCH
-        )
+        row > 0
+        and col > 0
+        and matrix[row][col]
+        == matrix[row - 1][col - 1]
+        + (MATCH if seq1[col - 1] == seq2[row - 1] else MISMATCH)
     ):
         new_params = BacktrackParams(
-            params.row - 1,
-            params.col - 1,
-            params.a1 + params.seq1[params.col - 1],
-            params.a2 + params.seq2[params.row - 1],
-            params.alignments,
-            params.matrix,
-            params.seq1,
-            params.seq2,
+            row - 1,
+            col - 1,
+            a1 + seq1[col - 1],
+            a2 + seq2[row - 1],
+            alignments,
+            matrix,
+            seq1,
+            seq2,
         )
-        backtrack(new_params)
+        return backtrack(new_params)
 
 
 def get_alignment_statistics(aligned_sequences: list) -> tuple:
@@ -200,7 +213,7 @@ def get_alignment_statistics(aligned_sequences: list) -> tuple:
     return matches, mismatches, gaps
 
 
-def print_statistics(params: StatisticsParams) -> None:
+def print_statistics(params: StatisticsParams, start_positions) -> None:
     matches, mismatches, gaps, length, aligned_sequences, idx = (
         params.matches,
         params.mismatches,
@@ -218,7 +231,8 @@ def print_statistics(params: StatisticsParams) -> None:
         f"Sequence identity: {matches}/{length} ({sequence_identity:.2%}) Mismatches: {mismatches}/{length} ({(mismatches / length):.2%}) Gaps: {gaps}/{length} ({(gaps / length):.2%})\n"
     )
     a1, a2 = aligned_sequences
-    print_alignment(a1, a2)
+
+    print_alignment(a1, a2, start_positions)
 
 
 # a)
