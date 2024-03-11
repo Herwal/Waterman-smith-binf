@@ -41,6 +41,7 @@ class StatisticsParams:
 def read_fasta(file_name: str) -> str:
     """
     Function to read a fasta file and return the sequence as a string.
+    Skips the first line of the file.
     @param file_name: The name of the file to read.
     """
     with open(file_name, "r", encoding="utf-8") as f:
@@ -51,38 +52,44 @@ def read_fasta(file_name: str) -> str:
 def print_alignment(seq1: str, seq2: str, start_positions: list) -> None:
     """
     Function to print the alignment of two sequences in a pretty format.
+    @constant MAX_WIDTH: The maximum width of the alignment, length of each line.
     @param seq1: The first sequence.
     @param seq2: The second sequence.
     """
-    max_width = 20
-    a, b = start_positions[0], start_positions[1]
-    print(a, b)
+    MAX_WIDTH = 20
+    start_row, start_col = start_positions[0], start_positions[1]
 
-    for i in range(0, len(seq1), max_width):
-        num_gap_a = " " * (len(str(b)) - 3)
-        num_gap_b = " " * (len(str(a)) - 3)
-        white_space_gap = "             " + " " * (len(str(a)))
+    for i in range(0, len(seq1), MAX_WIDTH):
+        # Calculate the number of spaces to print before the sequence
+        num_gap_upper = " " * (len(str(start_col)) - 3)
+        num_gap_lower = " " * (len(str(start_row)) - 3)
+        white_space_gap = "             " + " " * (len(str(start_row)))
+
+        # Sequence 1
         print(
-            f"Sequence1: {a} {num_gap_a} {seq1[i:i+max_width]} {a + len(seq1[i:i+max_width])}"
+            f"Sequence1: {start_row} {num_gap_upper} {seq1[i:i+MAX_WIDTH]} {start_row + len(seq1[i:i+MAX_WIDTH])}"
         )
+        # '|' if match, ' ' if mismatch
         print(
             white_space_gap
             + "".join(
                 "|" if seq1[i + k] == seq2[i + k] else " "
-                for k in range(min(max_width, len(seq1) - i))
+                for k in range(min(MAX_WIDTH, len(seq1) - i))
             )
         )
+        # Sequence 2
         print(
-            f"Sequence2: {b} {num_gap_b} {seq2[i:i+max_width]} {b + len(seq2[i:i+max_width])}"
+            f"Sequence2: {start_col} {num_gap_lower} {seq2[i:i+MAX_WIDTH]} {start_col + len(seq2[i:i+MAX_WIDTH])}"
         )
         print()
-        a += max_width
-        b += max_width
+        start_row += MAX_WIDTH
+        start_col += MAX_WIDTH
 
 
 def create_alignment_matrix(seq1: str, seq2: str) -> np.ndarray:
     """
     Function to create the alignment matrix for two given sequences.
+    Uses numpy.zeros to initialize the matrix with m + 1 and n + 1 dimensions.
     @param seq1: The first sequence.
     @param seq2: The second sequence.
     @return: The alignment matrix.
@@ -128,7 +135,9 @@ def local_alignment(seq1: str, seq2: str) -> None:
     alignment_score = np.max(matrix)
     max_pos = np.where(matrix == alignment_score)
 
+    # Backtrack to find the optimal alignment(s) for each alignment tuple
     for start_row, start_col in zip(*max_pos):
+        # Calles the params class to hold the parameters for the backtrack function
         back_track_params = BacktrackParams(
             start_row, start_col, "", "", aligned_sequences, matrix, seq1, seq2
         )
@@ -142,18 +151,20 @@ def local_alignment(seq1: str, seq2: str) -> None:
     # Get and print the statistics for each optimal alignment
     for idx, (a1, a2) in enumerate(aligned_sequences):
         length = len(a1)
+        # Get the number of matches, mismatches and gaps in the alignment
         matches, mismatches, gaps = get_alignment_statistics(aligned_sequences[idx])
 
+        # Calls the params class to hold the parameters for the print statistics function
         stats_params = StatisticsParams(
             matches, mismatches, gaps, length, aligned_sequences[idx], idx
         )
+        # Calls print statistics function
         print_statistics(stats_params, tuple(start_positions[idx]))
 
 
 def backtrack(params: BacktrackParams) -> None:
     """
-    Function to backtrack and find the optimal alignment(s).
-    Uses recursion to find all possible optimal alignments.
+    Function to backtrack and find the optimal alignment(s) using recursion.
     Uses the defined scoring scheme to determine the best move.
     @param params: The parameters for the backtrack function.
     @return: The optimal alignment(s).
@@ -224,7 +235,7 @@ def backtrack(params: BacktrackParams) -> None:
 def get_alignment_statistics(aligned_sequences: list) -> tuple:
     """
     Function to calculate the statistics for an alignment.
-    @param aligned_sequences: a list of the aligned sequences.
+    @param aligned_sequences: a list of the aligned sequences, contains only 1 alignment for each call.
     @return: The number of matches, mismatches and gaps in the alignment.
     """
     matches, mismatches, gaps = 0, 0, 0
