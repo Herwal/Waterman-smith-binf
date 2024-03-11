@@ -39,34 +39,41 @@ class StatisticsParams:
 
 
 def read_fasta(file_name: str) -> str:
-    """Function to read a fasta file and return the sequence as a string."""
+    """
+    Function to read a fasta file and return the sequence as a string.
+    @param file_name: The name of the file to read.
+    """
     with open(file_name, "r", encoding="utf-8") as f:
         f.readline()
         return f.read().replace("\n", "")
 
 
-def print_alignment(a1: str, a2: str, start_positions) -> None:
-    """Function to print the alignment of two sequences."""
+def print_alignment(seq1: str, seq2: str, start_positions: list) -> None:
+    """
+    Function to print the alignment of two sequences in a pretty format.
+    @param seq1: The first sequence.
+    @param seq2: The second sequence.
+    """
     max_width = 20
     a, b = start_positions[0], start_positions[1]
     print(a, b)
 
-    for i in range(0, len(a1), max_width):
+    for i in range(0, len(seq1), max_width):
         num_gap_a = " " * (len(str(b)) - 3)
         num_gap_b = " " * (len(str(a)) - 3)
         white_space_gap = "             " + " " * (len(str(a)))
         print(
-            f"Sequence1: {a} {num_gap_a} {a1[i:i+max_width]} {a + len(a1[i:i+max_width])}"
+            f"Sequence1: {a} {num_gap_a} {seq1[i:i+max_width]} {a + len(seq1[i:i+max_width])}"
         )
         print(
             white_space_gap
             + "".join(
-                "|" if a1[i + k] == a2[i + k] else " "
-                for k in range(min(max_width, len(a1) - i))
+                "|" if seq1[i + k] == seq2[i + k] else " "
+                for k in range(min(max_width, len(seq1) - i))
             )
         )
         print(
-            f"Sequence2: {b} {num_gap_b} {a2[i:i+max_width]} {b + len(a2[i:i+max_width])}"
+            f"Sequence2: {b} {num_gap_b} {seq2[i:i+max_width]} {b + len(seq2[i:i+max_width])}"
         )
         print()
         a += max_width
@@ -74,7 +81,12 @@ def print_alignment(a1: str, a2: str, start_positions) -> None:
 
 
 def create_alignment_matrix(seq1: str, seq2: str) -> np.ndarray:
-    """Function to create the alignment matrix for two given sequences."""
+    """
+    Function to create the alignment matrix for two given sequences.
+    @param seq1: The first sequence.
+    @param seq2: The second sequence.
+    @return: The alignment matrix.
+    """
     # Calculate the necessary dimensions and initialize the matrix
     N = len(seq1)
     M = len(seq2)
@@ -101,7 +113,13 @@ def create_alignment_matrix(seq1: str, seq2: str) -> np.ndarray:
 
 
 def local_alignment(seq1: str, seq2: str) -> None:
-    """Function to perform local alignment of two sequences."""
+    """
+    Function to perform local alignment of two sequences.
+    Uses create_alignment_matrix and backtrack functions to find the optimal alignment(s).
+    Uses print_statistics to print the statistics for each optimal alignment.
+    @param seq1: The first sequence.
+    @param seq2: The second sequence.
+    """
 
     # Create the alignment matrix and get the optimal alignment score
     aligned_sequences = []
@@ -133,7 +151,13 @@ def local_alignment(seq1: str, seq2: str) -> None:
 
 
 def backtrack(params: BacktrackParams) -> None:
-    """Function to backtrack and find the optimal alignment(s)."""
+    """
+    Function to backtrack and find the optimal alignment(s).
+    Uses recursion to find all possible optimal alignments.
+    Uses the defined scoring scheme to determine the best move.
+    @param params: The parameters for the backtrack function.
+    @return: The optimal alignment(s).
+    """
     row = params.row
     col = params.col
     a1 = params.a1
@@ -198,6 +222,11 @@ def backtrack(params: BacktrackParams) -> None:
 
 
 def get_alignment_statistics(aligned_sequences: list) -> tuple:
+    """
+    Function to calculate the statistics for an alignment.
+    @param aligned_sequences: a list of the aligned sequences.
+    @return: The number of matches, mismatches and gaps in the alignment.
+    """
     matches, mismatches, gaps = 0, 0, 0
     a1, a2 = aligned_sequences
 
@@ -214,6 +243,11 @@ def get_alignment_statistics(aligned_sequences: list) -> tuple:
 
 
 def print_statistics(params: StatisticsParams, start_positions) -> None:
+    """
+    Function to print the statistics for an alignment.
+    @param params: The parameters for the print statistics function.
+    @param start_positions: The start positions of the alignment.
+    """
     matches, mismatches, gaps, length, aligned_sequences, idx = (
         params.matches,
         params.mismatches,
