@@ -63,11 +63,12 @@ def print_alignment(seq1: str, seq2: str, start_positions: list) -> None:
         # Calculate the number of spaces to print before the sequence
         num_gap_upper = " " * (len(str(start_col)) - 3)
         num_gap_lower = " " * (len(str(start_row)) - 3)
-        white_space_gap = "             " + " " * (len(str(start_row)))
+        # Whitespace gap is just the length of the word "Sequence1: " + the length of the number of the start row
+        white_space_gap = "            " + " " * (len(str(start_row)))
 
         # Sequence 1
         print(
-            f"Sequence1: {start_row} {num_gap_upper} {seq1[i:i+MAX_WIDTH]} {start_row + len(seq1[i:i+MAX_WIDTH])}"
+            f"Sequence1: {start_row} {num_gap_upper}{seq1[i:i+MAX_WIDTH]} {start_row + len(seq1[i:i+MAX_WIDTH])}"
         )
         # '|' if match, ' ' if mismatch
         print(
@@ -79,7 +80,7 @@ def print_alignment(seq1: str, seq2: str, start_positions: list) -> None:
         )
         # Sequence 2
         print(
-            f"Sequence2: {start_col} {num_gap_lower} {seq2[i:i+MAX_WIDTH]} {start_col + len(seq2[i:i+MAX_WIDTH])}"
+            f"Sequence2: {start_col} {num_gap_lower}{seq2[i:i+MAX_WIDTH]} {start_col + len(seq2[i:i+MAX_WIDTH])}"
         )
         print()
         start_row += MAX_WIDTH
