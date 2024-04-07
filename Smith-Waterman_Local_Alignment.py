@@ -1,4 +1,6 @@
-"""Implementasjon av Smith-Waterman algoritmen for lokal sammenligning av to sekvenser."""
+"""
+Implementasjon av Smith-Waterman algoritmen for lokal sammenligning av to sekvenser. WIP.
+"""
 
 import numpy as np
 
@@ -56,8 +58,9 @@ def print_alignment(seq1: str, seq2: str, start_positions: list) -> None:
     @param seq1: The first sequence.
     @param seq2: The second sequence.
     """
-    MAX_WIDTH = 20
-    start_row, start_col = start_positions[0], start_positions[1]
+    MAX_WIDTH = 50
+    start_row = start_positions[0] - len(seq1)
+    start_col = start_positions[1] - len(seq2)
 
     for i in range(0, len(seq1), MAX_WIDTH):
         # Calculate the number of spaces to print before the sequence
